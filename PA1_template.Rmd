@@ -4,22 +4,84 @@ output:
   html_document:
     keep_md: true
 ---
+```{r }
 
+```
 
+```{r setwd}
+setwd("C:/Users/Tanki/RepData_PeerAssessment1")
+```
 ## Loading and preprocessing the data
-
+```{r loaddata}
+data <- read.csv("activity.csv")
+library(dplyr)
+library(ggplot2)
+library(Hmisc)
+```
 
 
 ## What is mean total number of steps taken per day?
-
+```{r }
+total_steps <- tapply(data$steps, data$date, sum, na.rm=TRUE)
+hist(total_steps, col = "green", 
+     breaks = 20,
+     main = "Total number of steps taken each day",
+     xlab = "Number of steps per day")
+mean(total_steps,na.rm = TRUE)
+median(total_steps,na.rm = TRUE)
+```
 
 
 ## What is the average daily activity pattern?
+```{r }
 
+by_interval<-group_by(data,interval)
+avg<- summarise(by_interval,average=mean(steps,na.rm=TRUE))
+ggplot(data=avg, aes(x=interval, y=average)) +
+    geom_line() +
+    xlab("5-minute interval") +
+    ylab("average number of steps taken")
 
+```
+##On average across all the days in the dataset, the 5-minute interval contains the maximum number of steps?
+```{r }
+avg[which.max(avg$average),1]
+```
 
 ## Imputing missing values
+```{r }
+na<-length(which(is.na(data$steps)))
+print(paste("Total Na values ", na) )
+```
 
+##Replacing missing values, creating new dataset and creating Histogram
+```{r }
+data_filled <- data
+data_filled$steps <- impute(data$steps, fun=mean)
+
+total_steps1 <- tapply(data_filled$steps, data_filled$date, sum, na.rm=TRUE)
+hist(total_steps, col = "green", 
+     breaks = 20,
+     main = "Total number of steps taken each day",
+     xlab = "Number of steps per day")
+mean(total_steps1,na.rm = TRUE)
+median(total_steps1,na.rm = TRUE)
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r }
+
+data_filled$date <- as.Date(data_filled$date)
+data_filled$weekday <- weekdays(data_filled$date)
+data_filled$day_type<-ifelse(data_filled$weekday %in% c("Sunday","Saturday"), "Weekend","Weekday")
+
+day_types_data <- aggregate(steps ~ interval + day_type, data=data_filled, mean)
+ggplot(day_types_data, aes(interval, steps)) + 
+        geom_line() + 
+        facet_grid(day_type ~ .) +
+        xlab("5-minute intervals") + 
+        ylab("Avarage number of steps taken") +
+        ggtitle("Weekdays and weekends activity patterns")
+
+```
